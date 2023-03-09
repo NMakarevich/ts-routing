@@ -1,5 +1,4 @@
 import { Route } from './interfaces';
-import NotFoundPage from './404';
 import routesList from '../routes';
 
 class Router {
@@ -25,7 +24,7 @@ class Router {
 
   findRoute(path: string) {
     const foundRoute = this.routes.find((route) => route.path === path);
-    if (!foundRoute) return { path: '404', component: NotFoundPage };
+    if (!foundRoute) return false;
     return foundRoute;
   }
 
