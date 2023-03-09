@@ -19,7 +19,8 @@ class Router {
   init() {
     const routeString = window.location.pathname;
     const route = this.findRoute(routeString);
-    this.loadComponent(route);
+    if (route) this.loadComponent(route);
+    else this.redirectTo('404');
   }
 
   findRoute(path: string) {
@@ -28,7 +29,7 @@ class Router {
     return foundRoute;
   }
 
-  loadComponent(route: Route, pushState = true) {
+  loadComponent(route: Route) {
     if (this.currentRoute) {
       this.currentRoute.component.destroy();
     }
@@ -36,20 +37,29 @@ class Router {
     this.currentRoute = route;
     this.route = route.path;
 
-    if (pushState && route.path !== '404') {
-      window.history.pushState({ url: route.path }, '', route.path);
-    }
-    if (route.path === '404') {
+    this.outlet.append(route.component.render());
+  }
+
+  redirectTo(path: string) {
+    if (this.route === path) return;
+    const route = this.findRoute(path);
+
+    if (route) {
+      this.loadComponent(route);
       window.history.replaceState({ url: route.path }, '', route.path);
     }
-    this.outlet.append(route.component.render());
   }
 
   navigateTo(path: string, pushState = true) {
     if (this.route === path) return;
     const route = this.findRoute(path);
 
-    this.loadComponent(route, pushState);
+    if (route) {
+      this.loadComponent(route);
+      if (pushState) {
+        window.history.pushState({ url: route.path }, '', route.path);
+      }
+    } else this.redirectTo('404');
   }
 
   eventListeners = () => {
