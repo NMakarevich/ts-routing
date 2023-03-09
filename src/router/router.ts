@@ -1,4 +1,5 @@
 import { Route } from './interfaces';
+import NotFoundPage from './404';
 import routesList from '../routes';
 
 class Router {
@@ -17,34 +18,46 @@ class Router {
   }
 
   init() {
-    this.route = window.location.pathname;
-    this.currentRoute = this.routes.find((route) => route.path === this.route);
-    if (this.currentRoute) {
-      this.outlet.append(this.currentRoute.component.render());
-    }
+    const routeString = window.location.pathname;
+    const route = this.findRoute(routeString);
+    this.loadComponent(route);
   }
 
-  navigateTo(url: string) {
-    if (this.route === url) return;
-    const destinationRoute = this.routes.find((route) => route.path === url);
-    if (!destinationRoute) return;
+  findRoute(path: string) {
+    const foundRoute = this.routes.find((route) => route.path === path);
+    if (!foundRoute) return { path: '404', component: NotFoundPage };
+    return foundRoute;
+  }
 
-    this.currentRoute.component.destroy();
-    this.currentRoute = destinationRoute;
-    this.route = this.currentRoute.path;
+  loadComponent(route: Route, pushState = true) {
+    if (this.currentRoute) {
+      this.currentRoute.component.destroy();
+    }
 
-    this.outlet.append(this.currentRoute.component.render());
-    window.history.pushState({ url: this.route }, '', this.route);
+    this.currentRoute = route;
+    this.route = route.path;
+
+    if (pushState && route.path !== '404') {
+      window.history.pushState({ url: route.path }, '', route.path);
+    }
+    if (route.path === '404') {
+      window.history.replaceState({ url: route.path }, '', route.path);
+    }
+    this.outlet.append(route.component.render());
+  }
+
+  navigateTo(path: string, pushState = true) {
+    if (this.route === path) return;
+    const route = this.findRoute(path);
+
+    this.loadComponent(route, pushState);
   }
 
   eventListeners = () => {
     window.addEventListener('popstate', () => {
-      this.route = window.history.state.url || window.location.pathname;
-      this.currentRoute.component.destroy();
-      this.currentRoute = this.routes.find(
-        (route) => route.path === this.route,
-      );
-      this.outlet.append(this.currentRoute.component.render());
+      const path = window.location.pathname || '/';
+
+      this.navigateTo(path, false);
     });
   };
 }
